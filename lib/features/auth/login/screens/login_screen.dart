@@ -1,10 +1,10 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/theme.dart';
 import '../../../main_navigation/screens/main_navigation_screen.dart';
+import '../../data/repo/auth_repo.dart'; // NEW
 import '../../sign_up/screens/sign_up_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
+  final AuthRepo _authRepo = AuthRepo(); // NEW
+  bool _isLoading = false; // NEW
 
   @override
   void initState() {
@@ -32,6 +34,30 @@ class _LoginScreenState extends State<LoginScreen> {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  // NEW: الدالة اللي بتكلم الـ API
+  Future<void> _login() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _authRepo.login(
+        email: emailController.text.trim(),
+        password: passwordController.text,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => MainNavigationScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -108,15 +134,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 PrimaryButton(
                   text: 'Login',
-                  onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => MainNavigationScreen(),
-                        ),
-                      );
-                    }
-                  },
+                  isLoading: _isLoading, // NEW
+                  onPressed: _login, // NEW
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -129,22 +148,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           context,
                           PageRouteBuilder(
                             pageBuilder: (
-                              context,
-                              animation,
-                              secondaryAnimation,
-                            ) => const SignUpScreen(),
+                                context,
+                                animation,
+                                secondaryAnimation,
+                                ) => const SignUpScreen(),
                             transitionsBuilder:
                                 (
-                                  context,
-                                  animation,
-                                  secondaryAnimation,
-                                  child,
+                                context,
+                                animation,
+                                secondaryAnimation,
+                                child,
                                 ) {
-                                  return FadeTransition(
-                                    opacity: animation,
-                                    child: child,
-                                  );
-                                },
+                              return FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              );
+                            },
                           ),
                         );
                       },
