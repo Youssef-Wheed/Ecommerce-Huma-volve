@@ -1,14 +1,77 @@
 import 'package:flutter/material.dart';
-import '../../../core/dummy_data.dart';
+import '../../../core/network/token_storage.dart';
 import '../../../core/theme.dart';
 import '../widgets/profile_menu_item.dart';
+import '../../auth/data/models/user_model.dart';
+import '../../auth/data/repo/auth_repo.dart';
 import '../../auth/login/screens/login_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthRepo _authRepo = AuthRepo();
+  UserModel? _user;
+  String? _error;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final user = await _authRepo.getProfile();
+      if (!mounted) return;
+      setState(() => _user = user);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null || _user == null) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error ?? 'Something went wrong'),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _loadProfile,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final user = _user!;
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
@@ -34,7 +97,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   child: CircleAvatar(
                     radius: 56,
-                    backgroundImage: NetworkImage(dummyUser.profilePictureUrl),
+                    backgroundImage: NetworkImage(user.avatar),
                   ),
                 ),
                 Container(
@@ -49,7 +112,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              dummyUser.name,
+              user.name,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -57,7 +120,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              dummyUser.email,
+              user.email,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey.shade600,
@@ -99,6 +162,7 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Logout',
                     isDestructive: true,
                     onTap: () {
+                      TokenStorage.clear();
                       Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
