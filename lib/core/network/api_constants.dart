@@ -5,4 +5,6 @@ class ApiConstants {
   static const String profile = '/auth/profile';
   static const String refreshToken = '/auth/refresh-token';
   static const String register = '/users/';
+  static const String products = '/products';
+  static const String categories = '/categories';
 }
