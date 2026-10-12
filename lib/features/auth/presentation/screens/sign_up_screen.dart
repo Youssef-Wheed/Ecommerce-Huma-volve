@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/theme.dart';
-import '../../presentation/screens/login_screen.dart';
-import '../../data/repo/auth_repo.dart';
+import '../../data/datasources/auth_remote_data_source.dart';
+import '../../data/repo/auth_repo_impl.dart';
+import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/register_usecase.dart';
+import '../cubit/auth_cubit.dart';
+import '../cubit/auth_state.dart';
+import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -18,14 +24,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late final TextEditingController nameController;
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
-  final AuthRepo _authRepo = AuthRepo();
-  bool _isLoading = false;
+  late final AuthCubit _cubit;
 
   @override
   void initState() {
     nameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
+    final repo = AuthRepoImpl(AuthRemoteDataSource());
+    _cubit = AuthCubit(LoginUseCase(repo), RegisterUseCase(repo));
 
     super.initState();
   }
@@ -35,34 +42,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    _cubit.close();
     super.dispose();
   }
-  Future<void> _signUp() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    setState(() => _isLoading = true);
-    try {
-      await _authRepo.register(
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        password: passwordController.text,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created, please login')),
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  void _signUp() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    _cubit.register(
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text,
+    );
   }
 
   @override
@@ -138,11 +128,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   },
                 ),
                 const SizedBox(height: 40),
-              PrimaryButton(
-                text: 'Sign Up',
-                isLoading: _isLoading,
-                onPressed: _signUp,
-              ),
+                BlocConsumer<AuthCubit, AuthState>(
+                  bloc: _cubit,
+                  listener: (context, state) {
+                    if (state.status == AuthStatus.success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Account created, please login'),
+                        ),
+                      );
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      );
+                    } else if (state.status == AuthStatus.failure) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            state.errorMessage ?? 'Something went wrong',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    return PrimaryButton(
+                      text: 'Sign Up',
+                      isLoading: state.status == AuthStatus.loading,
+                      onPressed: _signUp,
+                    );
+                  },
+                ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

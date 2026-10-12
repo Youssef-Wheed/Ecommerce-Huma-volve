@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/network/token_storage.dart';
 import '../../../core/theme.dart';
+
 import '../widgets/profile_menu_item.dart';
-import '../../auth/data/models/user_model.dart';
-import '../../auth/data/repo/auth_repo.dart';
-import '../../auth/login/screens/login_screen.dart';
+
+import '../../auth/data/datasources/auth_remote_data_source.dart';
+import '../../auth/data/repo/auth_repo_impl.dart';
+import '../../auth/domain/entities/user_entity.dart';
+import '../../auth/domain/usecases/get_profile_usecase.dart';
+
+import '../../auth/presentation/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,8 +20,11 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final AuthRepo _authRepo = AuthRepo();
-  UserModel? _user;
+  final GetProfileUseCase _getProfile = GetProfileUseCase(
+    AuthRepoImpl(AuthRemoteDataSource()),
+  );
+
+  UserEntity? _user;
   String? _error;
   bool _isLoading = true;
 
@@ -30,15 +39,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isLoading = true;
       _error = null;
     });
+
     try {
-      final user = await _authRepo.getProfile();
+      final user = await _getProfile();
+
       if (!mounted) return;
+
       setState(() => _user = user);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -60,10 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(_error ?? 'Something went wrong'),
               const SizedBox(height: 16),
-              TextButton(
-                onPressed: _loadProfile,
-                child: const Text('Retry'),
-              ),
+              TextButton(onPressed: _loadProfile, child: const Text('Retry')),
             ],
           ),
         ),
@@ -78,14 +92,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             const SizedBox(height: 24),
+
             const Text(
               'Profile',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 32),
+
             Stack(
               alignment: Alignment.bottomRight,
               children: [
@@ -100,6 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     backgroundImage: NetworkImage(user.avatar),
                   ),
                 ),
+
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
@@ -110,23 +125,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
+
             const SizedBox(height: 16),
+
             Text(
               user.name,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 4),
+
             Text(
               user.email,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
+
             const SizedBox(height: 32),
+
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -136,39 +151,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: 'My Orders',
                     onTap: () {},
                   ),
+
                   ProfileMenuItem(
                     icon: Icons.favorite_border,
                     title: 'Wishlist',
                     onTap: () {},
                   ),
+
                   ProfileMenuItem(
                     icon: Icons.location_on_outlined,
                     title: 'Shipping Addresses',
                     onTap: () {},
                   ),
+
                   ProfileMenuItem(
                     icon: Icons.payment_outlined,
                     title: 'Payment Methods',
                     onTap: () {},
                   ),
+
                   ProfileMenuItem(
                     icon: Icons.settings_outlined,
                     title: 'Settings',
                     onTap: () {},
                   ),
+
                   const SizedBox(height: 16),
+
                   ProfileMenuItem(
                     icon: Icons.logout,
                     title: 'Logout',
                     isDestructive: true,
                     onTap: () {
                       TokenStorage.clear();
+
                       Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                            return FadeTransition(opacity: animation, child: child);
+                          pageBuilder: (
+                              context,
+                              animation,
+                              secondaryAnimation,
+                              ) => const LoginScreen(),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
                           },
                         ),
                       );

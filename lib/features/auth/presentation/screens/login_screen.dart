@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/theme.dart';
+
 import '../../../main_navigation/screens/main_navigation_screen.dart';
-import '../../data/repo/auth_repo.dart'; // NEW
-import '../../sign_up/screens/sign_up_screen.dart';
+
+import '../../data/datasources/auth_remote_data_source.dart';
+import '../../data/repo/auth_repo_impl.dart';
+import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/register_usecase.dart';
+
+import '../cubit/auth_cubit.dart';
+import '../cubit/auth_state.dart';
+
+import 'sign_up_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,48 +26,42 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
-  final AuthRepo _authRepo = AuthRepo(); // NEW
-  bool _isLoading = false; // NEW
+
+  late final AuthCubit _cubit;
 
   @override
   void initState() {
+    super.initState();
+
     emailController = TextEditingController();
     passwordController = TextEditingController();
 
-    super.initState();
+    final repo = AuthRepoImpl(AuthRemoteDataSource());
+
+    _cubit = AuthCubit(LoginUseCase(repo), RegisterUseCase(repo));
   }
 
   @override
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    _cubit.close();
+
     super.dispose();
   }
 
-  // NEW: الدالة اللي بتكلم الـ API
-  Future<void> _login() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    setState(() => _isLoading = true);
-    try {
-      await _authRepo.login(
-        email: emailController.text.trim(),
-        password: passwordController.text,
-      );
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => MainNavigationScreen()),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+  void _login() {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
     }
+
+    _cubit.login(
+      email: emailController.text.trim(),
+      password: passwordController.text,
+    );
   }
 
   @override
@@ -73,22 +77,29 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
+
                 Icon(Icons.shopping_bag, size: 80, color: AppTheme.primary),
+
                 const SizedBox(height: 32),
+
                 Text(
                   'Welcome Back!',
                   style: Theme.of(context).textTheme.displayLarge
                       ?.copyWith(fontSize: 32),
                   textAlign: TextAlign.center,
                 ),
+
                 const SizedBox(height: 8),
+
                 Text(
                   'Login to continue your shopping',
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
+
                 const SizedBox(height: 64),
+
                 CustomTextField(
                   controller: emailController,
                   hintText: 'Email Address',
@@ -98,13 +109,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
+
                     if (!value.contains('@')) {
                       return 'Please enter a valid email';
                     }
+
                     return null;
                   },
                 ),
+
                 const SizedBox(height: 20),
+
                 CustomTextField(
                   controller: passwordController,
                   hintText: 'Password',
@@ -114,13 +129,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
                     }
+
                     if (value.length < 6) {
                       return 'Password must be at least 6 characters';
                     }
+
                     return null;
                   },
                 ),
+
                 const SizedBox(height: 16),
+
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
@@ -131,39 +150,66 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 32),
-                PrimaryButton(
-                  text: 'Login',
-                  isLoading: _isLoading, // NEW
-                  onPressed: _login, // NEW
+
+                BlocConsumer<AuthCubit, AuthState>(
+                  bloc: _cubit,
+                  listener: (context, state) {
+                    if (state.status == AuthStatus.success) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => MainNavigationScreen(),
+                        ),
+                      );
+                    } else if (state.status == AuthStatus.failure) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            state.errorMessage ?? 'Something went wrong',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  builder: (context, state) {
+                    return PrimaryButton(
+                      text: 'Login',
+                      isLoading: state.status == AuthStatus.loading,
+                      onPressed: _login,
+                    );
+                  },
                 ),
+
                 const SizedBox(height: 24),
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Don\'t have an account? '),
+                    const Text("Don't have an account? "),
+
                     GestureDetector(
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
                           PageRouteBuilder(
                             pageBuilder: (
-                                context,
-                                animation,
-                                secondaryAnimation,
-                                ) => const SignUpScreen(),
+                              context,
+                              animation,
+                              secondaryAnimation,
+                            ) => const SignUpScreen(),
                             transitionsBuilder:
                                 (
-                                context,
-                                animation,
-                                secondaryAnimation,
-                                child,
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
                                 ) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            },
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  );
+                                },
                           ),
                         );
                       },
