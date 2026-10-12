@@ -2,22 +2,44 @@ import 'package:flutter/material.dart';
 import '../../../core/dummy_data.dart';
 import '../../../core/theme.dart';
 import '../../details/screens/product_details_screen.dart';
+import '../data/models/product_model.dart';
 
 class ProductCard extends StatelessWidget {
-  final Product product;
+  final ProductModel product;
 
   const ProductCard({super.key, required this.product});
 
+  String get _imageUrl => product.images.isNotEmpty ? product.images.first : '';
+
+
+  Product _toDetailsProduct() {
+    return Product(
+      id: product.id.toString(),
+      name: product.title,
+      description: product.description,
+      price: product.price,
+      imageUrl: _imageUrl,
+      colors: [Colors.black, Colors.white, Colors.grey],
+      sizes: ['S', 'M', 'L', 'XL'],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final placeholder = Container(
+      color: Colors.grey.shade200,
+      alignment: Alignment.center,
+      child: Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade400),
+    );
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 500),
-            pageBuilder: (context, animation, secondaryAnimation) => 
-                ProductDetailsScreen(product: product),
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                ProductDetailsScreen(product: _toDetailsProduct()),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
@@ -48,11 +70,16 @@ class ProductCard extends StatelessWidget {
                     tag: 'product-${product.id}',
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                      child: Image.network(
-                        product.imageUrl,
-                        fit: BoxFit.cover,
+                      child: SizedBox(
                         width: double.infinity,
                         height: double.infinity,
+                        child: _imageUrl.isEmpty
+                            ? placeholder
+                            : Image.network(
+                          _imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => placeholder,
+                        ),
                       ),
                     ),
                   ),
@@ -84,7 +111,7 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      product.name,
+                      product.title,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
