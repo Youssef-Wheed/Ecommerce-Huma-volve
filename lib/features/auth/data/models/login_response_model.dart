@@ -1,10 +1,9 @@
-class LoginResponseModel {
-  final String accessToken;
-  final String refreshToken;
+import '../../domain/entities/auth_tokens_entity.dart';
 
-  LoginResponseModel({
-    required this.accessToken,
-    required this.refreshToken,
+class LoginResponseModel extends AuthTokensEntity {
+  const LoginResponseModel({
+    required super.accessToken,
+    required super.refreshToken,
   });
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
