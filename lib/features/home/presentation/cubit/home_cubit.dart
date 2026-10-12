@@ -1,18 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../data/repo/home_repo.dart';
+import '../../domain/usecases/get_categories_usecase.dart';
+import '../../domain/usecases/get_products_usecase.dart';
 import 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  final HomeRepo _repo;
+  final GetProductsUseCase _getProducts;
+  final GetCategoriesUseCase _getCategories;
 
-  HomeCubit(this._repo) : super(const HomeState());
+  HomeCubit(this._getProducts, this._getCategories)
+      : super(const HomeState());
 
   Future<void> loadHome() async {
     emit(const HomeState(status: HomeStatus.loading));
     try {
-      final products = await _repo.getProducts(limit: 30);
-      final categories = await _repo.getCategories();
+      final products = await _getProducts(limit: 30);
+      final categories = await _getCategories();
       emit(
         HomeState(
           status: HomeStatus.success,

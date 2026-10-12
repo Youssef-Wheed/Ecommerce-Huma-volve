@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/dummy_data.dart';
-import '../../../core/theme.dart';
+import '../../../../core/dummy_data.dart';
+import '../../../../core/theme.dart';
+
+import '../../data/datasources/home_remote_data_source.dart';
+import '../../data/repo/home_repo_impl.dart';
+import '../../domain/entities/product_entity.dart';
+import '../../domain/usecases/get_categories_usecase.dart';
+import '../../domain/usecases/get_products_usecase.dart';
+
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
-import '../data/models/product_model.dart';
-import '../data/repo/home_repo.dart';
+
 import '../widgets/category_chip.dart';
 import '../widgets/product_card.dart';
 
@@ -16,7 +22,12 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => HomeCubit(HomeRepo())..loadHome(),
+      create: (_) {
+        final repo = HomeRepoImpl(HomeRemoteDataSource());
+
+        return HomeCubit(GetProductsUseCase(repo), GetCategoriesUseCase(repo))
+          ..loadHome();
+      },
       child: const _HomeView(),
     );
   }
@@ -35,7 +46,7 @@ class _HomeViewState extends State<_HomeView> {
   Widget _buildBody(
     BuildContext context,
     HomeState state,
-    List<ProductModel> products,
+    List<ProductEntity> products,
   ) {
     if (state.status == HomeStatus.failure) {
       return SliverToBoxAdapter(
@@ -102,10 +113,12 @@ class _HomeViewState extends State<_HomeView> {
             ];
 
             var products = state.products;
+
             if (_selectedCategoryIndex > 0 &&
                 _selectedCategoryIndex <= state.categories.length) {
               final selectedId =
                   state.categories[_selectedCategoryIndex - 1].id;
+
               products = products
                   .where((p) => p.category.id == selectedId)
                   .toList();

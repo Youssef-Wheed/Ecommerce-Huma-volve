@@ -1,12 +1,12 @@
-import '../data/models/category_model.dart';
-import '../data/models/product_model.dart';
+import '../../domain/entities/category_entity.dart';
+import '../../domain/entities/product_entity.dart';
 
 enum HomeStatus { initial, loading, success, failure }
 
 class HomeState {
   final HomeStatus status;
-  final List<ProductModel> products;
-  final List<CategoryModel> categories;
+  final List<ProductEntity> products;
+  final List<CategoryEntity> categories;
   final String? errorMessage;
 
   const HomeState({
