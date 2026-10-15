@@ -42,12 +42,33 @@ class _HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<_HomeView> {
   int _selectedCategoryIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 300) {
+      context.read<HomeCubit>().loadMoreProducts();
+    }
+  }
 
   Widget _buildBody(
-    BuildContext context,
-    HomeState state,
-    List<ProductEntity> products,
-  ) {
+      BuildContext context,
+      HomeState state,
+      List<ProductEntity> products,
+      ) {
     if (state.status == HomeStatus.failure) {
       return SliverToBoxAdapter(
         child: Padding(
@@ -125,6 +146,7 @@ class _HomeViewState extends State<_HomeView> {
             }
 
             return CustomScrollView(
+              controller: _scrollController,
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
@@ -219,7 +241,7 @@ class _HomeViewState extends State<_HomeView> {
                               scrollDirection: Axis.horizontal,
                               itemCount: categoryNames.length,
                               separatorBuilder: (context, index) =>
-                                  const SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               itemBuilder: (context, index) {
                                 return CategoryChip(
                                   label: categoryNames[index],
@@ -239,7 +261,16 @@ class _HomeViewState extends State<_HomeView> {
                   ),
                 ),
                 _buildBody(context, state, products),
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: state.isLoadingMore
+                          ? const CircularProgressIndicator()
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
               ],
             );
           },
