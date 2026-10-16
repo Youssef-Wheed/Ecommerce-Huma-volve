@@ -3,12 +3,14 @@ import '../../../core/theme.dart';
 import '../../home/presentation/screens/home_screen.dart';
 import '../../cart/screens/cart_screen.dart';
 import '../../profile/screens/profile_screen.dart';
+import '../../details/deep_link/deep_link_service.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  State<MainNavigationScreen> createState() =>
+      _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
@@ -19,6 +21,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const CartScreen(),
     const ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeepLinkService.instance.setReady(true);
+    });
+  }
+
+  @override
+  void dispose() {
+    DeepLinkService.instance.setReady(false);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +51,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: (index) {
