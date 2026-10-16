@@ -30,4 +30,16 @@ class HomeRepoImpl implements HomeRepo {
       throw Exception('Something went wrong, check your internet');
     }
   }
+  @override
+  Future<ProductEntity> getProductById(int id) async {
+    try {
+      return await _remote.getProductById(id);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 400 || code == 404) {
+        throw Exception('Product not found');
+      }
+      throw Exception('Something went wrong, check your internet');
+    }
+  }
 }

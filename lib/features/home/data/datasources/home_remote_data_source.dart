@@ -26,4 +26,9 @@ class HomeRemoteDataSource {
         .map((item) => CategoryModel.fromJson(item))
         .toList();
   }
+  Future<ProductModel> getProductById(int id) async {
+    final response = await _dio.get('${ApiConstants.products}/$id');
+    return ProductModel.fromJson(response.data);
+  }
+
 }
