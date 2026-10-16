@@ -39,18 +39,9 @@ The project was developed as **5 tasks, each on its own Git branch**, so the his
 | 4 | `task-4` | **Pagination in Home** | Infinite scroll with offset/limit loading and a bottom loader |
 | 5 | `task-5` | **Deep Linking in Product Details** | `ecommerce://product/<id>` opens the product, with cold-start and error handling |
 
-```mermaid
-flowchart LR
-    A["Task 1<br/>Auth + API"] --> B["Task 2<br/>Home + Cubit"]
-    B --> C["Task 3<br/>Clean Architecture"]
-    C --> D["Task 4<br/>Pagination"]
-    D --> E["Task 5<br/>Deep Linking"]
-    style A fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
-    style B fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
-    style C fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
-    style D fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
-    style E fill:#ede9fe,stroke:#7c3aed,color:#1e1b4b
-```
+<p align="center">
+  <img src="docs/journey.svg" alt="Project journey: 5 tasks from Auth to Deep Linking" width="100%"/>
+</p>
 
 ## ✨ Features
 
@@ -79,27 +70,9 @@ ecommerce://product/2
 | Product deleted or invalid id | Clear *"Product not found"* message with a **Retry** button, no crash |
 | Unrelated or malformed link | Ignored safely |
 
-```mermaid
-sequenceDiagram
-    participant OS as Android
-    participant S as DeepLinkService
-    participant M as MainNavigationScreen
-    participant L as ProductDetailsLoaderScreen
-    participant API as REST API
-
-    OS->>S: ecommerce://product/2
-    S->>S: Parse and validate the id
-    alt User is on the main screen
-        S->>L: Push loader screen
-    else Still on Splash or Login
-        S->>S: Store pending id
-        M-->>S: setReady(true) after login
-        S->>L: Push loader screen
-    end
-    L->>API: GET /products/2
-    API-->>L: Product or error
-    L-->>L: Show details or "Product not found"
-```
+<p align="center">
+  <img src="docs/deep-link-flow.svg" alt="Deep link flow" width="85%"/>
+</p>
 
 **Implementation highlights**
 
@@ -123,23 +96,9 @@ adb shell am start -a android.intent.action.VIEW -d "ecommerce://product/999999"
 
 The app uses **Clean Architecture** with a feature-first structure. Auth and Home are fully layered (Task 3).
 
-```mermaid
-flowchart TB
-    subgraph P["Presentation"]
-        UI["Screens and Widgets"] --> CB["Cubit and State"]
-    end
-    subgraph D["Domain (pure Dart)"]
-        UC["Use Cases"] --> RI["Repository interfaces"]
-        EN["Entities"]
-    end
-    subgraph DA["Data"]
-        RP["Repository implementations"] --> DS["Remote Data Sources (Dio)"]
-        MD["Models (JSON)"]
-    end
-    CB --> UC
-    RP -. implements .-> RI
-    DS --> API[("REST API")]
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="Clean Architecture layers" width="75%"/>
+</p>
 
 | Layer | Responsibility |
 |-------|----------------|
