@@ -18,8 +18,10 @@ class AuthRepoImpl implements AuthRepo {
   }) async {
     try {
       final result = await _remote.login(email: email, password: password);
-      TokenStorage.accessToken = result.accessToken;
-      TokenStorage.refreshToken = result.refreshToken;
+      await TokenStorage.save(
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      );
       return result;
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
