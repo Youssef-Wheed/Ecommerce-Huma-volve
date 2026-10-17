@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../../../core/dummy_data.dart';
-
 import '../../../../core/theme.dart';
 import '../../../details/screens/product_details_screen.dart';
 import '../../domain/entities/product_entity.dart';
-
 
 class ProductCard extends StatelessWidget {
   final ProductEntity product;
 
   const ProductCard({super.key, required this.product});
 
-  String get _imageUrl => product.images.isNotEmpty ? product.images.first : '';
-
+  String get _imageUrl =>
+      product.images.isNotEmpty ? product.images.first : '';
 
   Product _toDetailsProduct() {
     return Product(
@@ -31,7 +29,10 @@ class ProductCard extends StatelessWidget {
     final placeholder = Container(
       color: Colors.grey.shade200,
       alignment: Alignment.center,
-      child: Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade400),
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        color: Colors.grey.shade400,
+      ),
     );
 
     return GestureDetector(
@@ -42,7 +43,8 @@ class ProductCard extends StatelessWidget {
             transitionDuration: const Duration(milliseconds: 500),
             pageBuilder: (context, animation, secondaryAnimation) =>
                 ProductDetailsScreen(product: _toDetailsProduct()),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
           ),
@@ -71,7 +73,9 @@ class ProductCard extends StatelessWidget {
                   Hero(
                     tag: 'product-${product.id}',
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
                       child: SizedBox(
                         width: double.infinity,
                         height: double.infinity,
@@ -80,7 +84,8 @@ class ProductCard extends StatelessWidget {
                             : Image.network(
                           _imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => placeholder,
+                          errorBuilder: (context, error, stackTrace) =>
+                          placeholder,
                         ),
                       ),
                     ),
@@ -107,22 +112,24 @@ class ProductCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      product.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        height: 1.2,
+                    Flexible(
+                      child: Text(
+                        product.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -131,7 +138,7 @@ class ProductCard extends StatelessWidget {
                           style: const TextStyle(
                             color: AppTheme.primary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                            fontSize: 16,
                           ),
                         ),
                         Container(
